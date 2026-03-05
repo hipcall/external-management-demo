@@ -1,0 +1,261 @@
+:root {
+    --primary: #2c3e50;
+    --accent: #3498db;
+    --success: #27ae60;
+    --danger: #e74c3c;
+    --light: #ecf0f1;
+    --white: #ffffff;
+    --text: #2c3e50;
+    --border: #dcdde1;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: #f5f6fa;
+    color: var(--text);
+    padding: 2rem;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+}
+
+h1 {
+    font-size: 1.8rem;
+    color: var(--primary);
+}
+
+.card {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th,
+td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    background-color: var(--light);
+    font-weight: 600;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    opacity: 0.8;
+}
+
+.btn-add {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-edit {
+    background: var(--warning);
+    color: #333;
+    margin-right: 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    padding: 2px 8px;
+}
+
+.btn-delete {
+    background: var(--danger);
+    color: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Modal / Form overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 400px;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* Dial Section */
+.dial-list {
+    margin-top: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fdfdfd;
+}
+
+.dial-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.dial-item:last-child {
+    border-bottom: none;
+}
+
+.dial-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* --- LOG SECTION --- */
+.log-area {
+    background: #fdfdfd;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    max-height: 600px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: left;
+}
+
+.log-item {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s;
+}
+
+.log-item:hover {
+    transform: translateY(-2px);
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px dashed var(--border);
+}
+
+.log-method {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.log-path {
+    font-family: monospace;
+    font-weight: bold;
+    color: #444;
+}
+
+.log-time {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.log-bodies {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+@media (max-width: 768px) {
+    .log-bodies {
+        grid-template-columns: 1fr;
+    }
+}
+
+.log-body pre {
+    background: #f8f9fa;
+    color: #333;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: 'Courier New', Courier, monospace;
+    overflow-x: auto;
+    overflow-y: visible;
+    margin-top: 0.5rem;
+    max-height: none;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.log-body strong {
+    color: #555;
+    font-size: 0.9rem;
+}

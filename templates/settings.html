@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ayarlar - Hipcall Harici Yönetim</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Ayarlar</h1>
+            <div style="display: flex; gap: 10px;">
+                <a href="/" class="btn" style="background: #95a5a6; color: white;">← Geri Dön</a>
+                <button class="btn btn-add" onclick="openModal()">+ Yeni Kişi Ekle</button>
+            </div>
+        </header>
+
+        <div class="card">
+            <header>
+                <h2>Dial (Yönlendirme Numaraları)</h2>
+            </header>
+            <div class="dial-container">
+                <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="dialPhone" placeholder="905XXXXXXXXX" style="flex: 1;">
+                    <button class="btn btn-add" onclick="addDialNumber()">+ Ekle</button>
+                </div>
+                <div id="dialList" class="dial-list">
+                    <!-- Dial numaraları buraya gelecek -->
+                </div>
+            </div>
+        </div>
+        <div class="card" style="margin-top: 2rem;">
+            <header>
+                <h2>Dahililer (Dahili Numaralar)</h2>
+            </header>
+            <div class="extension-container">
+                <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="extensionNumber" placeholder="10XX" style="flex: 1;">
+                    <button class="btn btn-add" onclick="addExtension()">+ Ekle</button>
+                </div>
+                <div id="extensionList" class="dial-list">
+                    <!-- Dahili numaralar buraya gelecek -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal (Same as index.html but without needing user list refresh logic here, or maybe keep it for consistency) -->
+    <div id="modalOverlay" class="overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 id="modalTitle">Kişi Ekle</h2>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label>Ad</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Soyad</label>
+                    <input type="text" id="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="phone" placeholder="505XXXXXXX" required>
+                </div>
+                <div class="form-group">
+                    <label>Sesli PIN</label>
+                    <input type="text" id="pinCode" maxlength="4" placeholder="1234">
+                </div>
+                <div class="form-group">
+                    <label>Rol (VIP Testi İçin)</label>
+                    <select id="role" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:4px;">
+                        <option value="user">Standart Kullanıcı</option>
+                        <option value="admin">VIP (Admin)</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn btn-add">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('modalOverlay').style.display = 'flex';
+            document.getElementById('modalTitle').innerText = 'Yeni Kişi Ekle';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+        }
+
+        document.getElementById('userForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                phone: document.getElementById('phone').value,
+                pin_code: document.getElementById('pinCode').value,
+                role: document.getElementById('role').value
+            };
+
+            await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            closeModal();
+            alert("Yeni kişi başarıyla eklendi.");
+        };
+
+        // --- DIAL MANAGEMENT LOGIC ---
+        let dialNumbers = [];
+
+        function loadDialNumbers() {
+            const saved = localStorage.getItem('dial_numbers');
+            if (saved) {
+                dialNumbers = JSON.parse(saved);
+            }
+            renderDialList();
+        }
+
+        function saveDialNumbers() {
+            localStorage.setItem('dial_numbers', JSON.stringify(dialNumbers));
+        }
+
+        async function syncActiveDialWithBackend(phone) {
+            try {
+                await fetch('/api/settings/active-dial', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phone })
+                });
+            } catch (err) {
+                console.error("Backend'e aktif numara gönderilemedi:", err);
+            }
+        }
+
+        function renderDialList() {
+            const container = document.getElementById('dialList');
+            container.innerHTML = '';
+
+            if (dialNumbers.length === 0) {
+                container.innerHTML = '<p style="color: #888; text-align: center; padding: 1rem;">Henüz numara eklenmedi.</p>';
+                return;
+            }
+
+            dialNumbers.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'dial-item';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <input type="checkbox" ${item.active ? 'checked' : ''} onchange="toggleDialActive(${index})">
+                        <span style="font-family: monospace; font-size: 1.1rem;">${item.phone}</span>
+                    </div>
+                    <button class="btn-delete" onclick="deleteDialNumber(${index})">Sil</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function addDialNumber() {
+            const input = document.getElementById('dialPhone');
+            const phone = input.value.trim();
+            if (!phone) return;
+
+            const active = dialNumbers.length === 0;
+            dialNumbers.push({ phone, active });
+            input.value = '';
+            saveDialNumbers();
+
+            if (active) {
+                await syncActiveDialWithBackend(phone);
+            }
+            renderDialList();
+        }
+
+        function deleteDialNumber(index) {
+            dialNumbers.splice(index, 1);
+            saveDialNumbers();
+            renderDialList();
+        }
+
+        async function toggleDialActive(index) {
+            const phone = dialNumbers[index].phone;
+            dialNumbers.forEach((item, i) => {
+                item.active = (i === index);
+            });
+            saveDialNumbers();
+            await syncActiveDialWithBackend(phone);
+            renderDialList();
+        }
+
+        // --- EXTENSION MANAGEMENT LOGIC ---
+        let extensions = [];
+
+        function loadExtensions() {
+            const saved = localStorage.getItem('extensions');
+            if (saved) {
+                extensions = JSON.parse(saved);
+            }
+            renderExtensionList();
+        }
+
+        function saveExtensions() {
+            localStorage.setItem('extensions', JSON.stringify(extensions));
+        }
+
+        async function syncActiveExtensionWithBackend(extension) {
+            try {
+                await fetch('/api/settings/active-extension', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ extension: extension })
+                });
+            } catch (err) {
+                console.error("Backend'e aktif dahili gönderilemedi:", err);
+            }
+        }
+
+        function renderExtensionList() {
+            const container = document.getElementById('extensionList');
+            container.innerHTML = '';
+
+            if (extensions.length === 0) {
+                container.innerHTML = '<p style="color: #888; text-align: center; padding: 1rem;">Henüz dahili eklenmedi.</p>';
+                return;
+            }
+
+            extensions.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'dial-item';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <input type="checkbox" ${item.active ? 'checked' : ''} onchange="toggleExtensionActive(${index})">
+                        <span style="font-family: monospace; font-size: 1.1rem;">${item.number}</span>
+                    </div>
+                    <button class="btn-delete" onclick="deleteExtension(${index})">Sil</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function addExtension() {
+            const input = document.getElementById('extensionNumber');
+            const number = input.value.trim();
+            if (!number) return;
+
+            const active = extensions.length === 0;
+            extensions.push({ number, active });
+            input.value = '';
+            saveExtensions();
+
+            if (active) {
+                await syncActiveExtensionWithBackend(number);
+            }
+            renderExtensionList();
+        }
+
+        function deleteExtension(index) {
+            extensions.splice(index, 1);
+            saveExtensions();
+            renderExtensionList();
+        }
+
+        async function toggleExtensionActive(index) {
+            const number = extensions[index].number;
+            extensions.forEach((item, i) => {
+                item.active = (i === index);
+            });
+            saveExtensions();
+            await syncActiveExtensionWithBackend(number);
+            renderExtensionList();
+        }
+
+        loadDialNumbers();
+        loadExtensions();
+    </script>
+</body>
+
+</html>

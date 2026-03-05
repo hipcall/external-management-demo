@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sistem Logları - Hipcall Harici Yönetim</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <style>
+        .container {
+            max-width: 1400px;
+            /* Wider container for logs */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistem Logları</h1>
+            <div style="display: flex; gap: 10px;">
+                <a href="/" class="btn" style="background: #95a5a6; color: white;">← Geri Dön</a>
+                <button class="btn btn-add" onclick="fetchLogs()">Logları Yenile</button>
+                <button class="btn btn-delete" onclick="clearLogs()">Logları Temizle</button>
+            </div>
+        </header>
+
+        <div id="logArea" style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem;">
+            <!-- Loglar buraya gelecek -->
+        </div>
+    </div>
+
+    <script>
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                if (res.status === 401) {
+                    alert("Oturum süresi dolmuş veya yetkiniz yok.");
+                    return;
+                }
+                const logs = await res.json();
+                renderLogs(logs);
+            } catch (err) {
+                console.error("Loglar çekilemedi:", err);
+            }
+        }
+
+        async function clearLogs() {
+            if (!confirm("Tüm logları silmek istediğinize emin misiniz?")) return;
+
+            try {
+                await fetch('/api/logs', { method: 'DELETE' });
+                document.getElementById('logArea').innerHTML = '';
+            } catch (err) {
+                console.error("Loglar silinemedi:", err);
+            }
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById('logArea');
+            container.innerHTML = '';
+
+            if (logs.length === 0) {
+                container.innerHTML = '<p style="color: #888; text-align: center; padding: 2rem;">Henüz log kaydı bulunmuyor.</p>';
+                return;
+            }
+
+            logs.forEach(log => {
+                const div = document.createElement('div');
+                div.className = 'log-item';
+
+                let reqJson = log.request_body;
+                let resJson = log.response_body;
+
+                try {
+                    if (reqJson && reqJson.startsWith('{')) {
+                        reqJson = JSON.stringify(JSON.parse(reqJson), null, 2);
+                    }
+                } catch (e) { }
+
+                try {
+                    if (resJson && resJson.startsWith('{')) {
+                        resJson = JSON.stringify(JSON.parse(resJson), null, 2);
+                    }
+                } catch (e) { }
+
+                div.innerHTML = `
+                    <div class="log-header">
+                        <span class="log-method">${log.method}</span>
+                        <span class="log-path">${log.path}</span>
+                        <span class="log-time">${new Date(log.timestamp).toLocaleString('tr-TR')}</span>
+                    </div>
+                    <div class="log-bodies">
+                        <div class="log-body">
+                            <strong>Request:</strong>
+                            <pre>${reqJson || 'Empty'}</pre>
+                        </div>
+                        <div class="log-body">
+                            <strong>Response:</strong>
+                            <pre>${resJson || 'Empty'}</pre>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        fetchLogs();
+    </script>
+</body>
+
+</html>

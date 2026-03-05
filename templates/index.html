@@ -1,0 +1,149 @@
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test Portalı - Hipcall Harici Yönetim</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Test Portalı</h1>
+            <div style="display: flex; gap: 10px;">
+                <a href="/settings" class="btn btn-add">⚙ Ayarlar</a>
+                <a href="/logs" class="btn btn-add">📋 Loglar</a>
+            </div>
+        </header>
+
+        <div class="card">
+            <table id="userTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Ad Soyad</th>
+                        <th>Telefon</th>
+                        <th>Sesli PIN</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modalOverlay" class="overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 id="modalTitle">Kişiyi Düzenle</h2>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label>Ad</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Soyad</label>
+                    <input type="text" id="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="phone" placeholder="505XXXXXXX" required>
+                </div>
+                <div class="form-group">
+                    <label>Sesli PIN</label>
+                    <input type="text" id="pinCode" maxlength="4" placeholder="1234">
+                </div>
+                <div class="form-group">
+                    <label>Rol (VIP Testi İçin)</label>
+                    <select id="role" style="width:100%; padding:0.5rem; border:1px solid #ddd; border-radius:4px;">
+                        <option value="user">Standart Kullanıcı</option>
+                        <option value="admin">VIP (Admin)</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn btn-add">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function fetchUsers() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            const tbody = document.querySelector('#userTable tbody');
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.first_name} ${user.last_name} ${user.role === 'admin' ? '<span style="color:#f39c12; font-size:0.7rem;">[VIP]</span>' : ''}</td>
+                    <td>${user.phone}</td>
+                    <td><code>${user.pin_code || '----'}</code></td>
+                    <td>
+                        <button class="btn-edit" onclick='editUser(${JSON.stringify(user)})'>Düzenle</button>
+                        <button class="btn-delete" onclick="deleteUser(${user.id})">Sil</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModal(user = null) {
+            document.getElementById('modalOverlay').style.display = 'flex';
+            if (user) {
+                document.getElementById('modalTitle').innerText = 'Kişiyi Düzenle';
+                document.getElementById('userId').value = user.id;
+                document.getElementById('firstName').value = user.first_name;
+                document.getElementById('lastName').value = user.last_name;
+                document.getElementById('phone').value = user.phone;
+                document.getElementById('pinCode').value = user.pin_code || '';
+                document.getElementById('role').value = user.role || 'user';
+            }
+        }
+
+        function closeModal(e) {
+            document.getElementById('modalOverlay').style.display = 'none';
+        }
+
+        async function editUser(user) {
+            openModal(user);
+        }
+
+        async function deleteUser(id) {
+            if (!confirm("Bu kişiyi silmek istediğinize emin misiniz?")) return;
+            await fetch(`/api/users/${id}`, { method: 'DELETE' });
+            fetchUsers();
+        }
+
+        document.getElementById('userForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('userId').value;
+            const data = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                phone: document.getElementById('phone').value,
+                pin_code: document.getElementById('pinCode').value,
+                role: document.getElementById('role').value
+            };
+
+            await fetch(`/api/users/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            closeModal();
+            fetchUsers();
+        };
+
+        // Otomatik yenileme (Hipcall PIN güncellemesi yaptığında tabloda görmek için)
+        setInterval(fetchUsers, 3000);
+        fetchUsers();
+    </script>
+</body>
+
+</html>
