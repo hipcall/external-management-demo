@@ -8,7 +8,7 @@ from functools import wraps
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
-DB_PATH = os.environ.get('DB_PATH', '/app/data/database.db')
+DB_PATH = os.environ.get('DB_PATH', './data/database.db')
 
 # --- AUTHENTICATION ---
 
@@ -345,4 +345,4 @@ def logs():
     return render_template('logs.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port=5005)
